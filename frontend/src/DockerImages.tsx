@@ -26,11 +26,13 @@ export class DockerImagesState {
     getProjects() {
         switch (this.projects.state) {
         case 'initial':
-            state.sendMessage({
-                type: ACTION.DockerListImageTags,
-                ref: 0
-            });
-            this.projects = {state: 'loading'}
+            setTimeout( () => {
+                state.sendMessage({
+                    type: ACTION.DockerListImageTags,
+                    ref: 0
+                });
+                this.projects = {state: 'loading'}
+            }, 0);
             return null;
         case 'error':
             return null;
@@ -44,21 +46,22 @@ export class DockerImagesState {
     getImageHistory(project:string, tag:string) {
         this.wtf;
         let h1 = this.imageHistory.get(project);
-        if (!h1) {
-            h1 = new Map();
-            this.imageHistory.set(project, h1);
-        }
-        const h2 = h1.get(tag) || {state: 'initial'};
-        console.log("Get image history", h2.state);
+        const h2 = (h1 && h1.get(tag)) || {state: 'initial'};
         switch (h2.state) {
         case 'initial':
-            state.sendMessage({
-                type: ACTION.DockerListImageTagHistory,
-                ref: 0,
-                image: project,
-                tag
+            setTimeout( () => {
+                state.sendMessage({
+                    type: ACTION.DockerListImageTagHistory,
+                    ref: 0,
+                    image: project,
+                    tag
+                });
+                if (!h1) {
+                    h1 = new Map();
+                    this.imageHistory.set(project, h1);
+                }
+                h1.set(tag, {state: 'loading'})
             });
-            h1.set(tag, {state: 'loading'})
             return null;
         case 'error':
             return null;

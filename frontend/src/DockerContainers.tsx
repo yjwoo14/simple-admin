@@ -26,41 +26,44 @@ export class DockerContainersState {
     @observable
     wtf: number = 0;
 
-
     getHosts() {
         switch (this.hosts.state) {
         case 'loading': return null;
         case 'data': return this.hosts.data;
         case 'error': return null;
         case 'initial':
-            state.sendMessage({
-                type: ACTION.DockerListDeployments,
-                ref: 0
-            });
-            this.hosts = {state: 'loading'}
+            setTimeout(()=> {
+                state.sendMessage({
+                    type: ACTION.DockerListDeployments,
+                    ref: 0
+                });
+                this.hosts = {state: 'loading'}
+            }, 0);
             return null;
         }
     }
 
     getHistory(host:number, container: string) {
         let c1 = this.containerHistory.get(host);
-        if (!c1) {
-            c1 = new ObservableMap();
-            this.containerHistory.set(host, c1);
-        }
-        const c2 = c1.get(container) || {state: 'initial'};
+        const c2 = (c1 && c1.get(container)) || {state: 'initial'};
         switch (c2.state) {
         case 'loading': return null;
         case 'data': return c2.data;
         case 'error': return null;
         case 'initial':
-            state.sendMessage({
-                type: ACTION.DockerListDeploymentHistory,
-                host: host,
-                name: container,
-                ref: 0
-            });
-            c1.set(container, {state: "loading"});
+            setTimeout( () => {
+                state.sendMessage({
+                    type: ACTION.DockerListDeploymentHistory,
+                    host: host,
+                    name: container,
+                    ref: 0
+                });
+                if (!c1) {
+                    c1 = new ObservableMap();
+                    this.containerHistory.set(host, c1);
+                }
+                c1.set(container, {state: "loading"});
+            }, 0);
             return null;
         }
     }
