@@ -14,16 +14,11 @@ import Editor from './Editor';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
 import { number } from 'prop-types';
-
+import Remote from './Remote';
 
 export class ModifiedFilesState {
     @observable
-    loaded = false;
-
-    loading = false;
-
-    @observable
-    modifiedFiles: Map<number, ModifiedFile> = new Map;
+    modifiedFiles: Remote< Map<number, ModifiedFile> > = {state: 'initial'};
 
     @observable
     scanning: boolean;
@@ -38,27 +33,25 @@ export class ModifiedFilesState {
     private saveInterval: any = null;
 
     load() {
-        if (this.loading || this.loaded) return;
-        this.loading = true;
+        if (this.modifiedFiles.state != 'initial') return;
         state.sendMessage({
             type: ACTION.ModifiedFilesList
         });
+        this.modifiedFiles = {state: 'loading'};
     }
 
     @action
     handleChange(act : IModifiedFilesChanged) {
-        if (act.full) {
-            this.modifiedFiles = new Map();
-            this.loading = false;
-            this.loaded = true;
-        }
-        if (!this.loaded) return;
+        if (act.full) 
+            this.modifiedFiles = {state: 'data', data: new Map()};
+        if (this.modifiedFiles.state != 'data')
+            return;
         this.scanning = act.scanning;
         this.lastScanTime = act.lastScanTime;
         for (const id of act.removed)
-            this.modifiedFiles.delete(id);
+            this.modifiedFiles.data.delete(id);
         for (const f of act.changed) 
-            this.modifiedFiles.set(f.id, f);
+            this.modifiedFiles..data.set(f.id, f);
     }
 
     scan() {
@@ -149,10 +142,14 @@ export class ModifiedFileRevolver extends React.Component<{id:number}, {content:
 
     render() {
         const s = state.modifiedFiles;
-        s.load();
-        if (!s.loaded || !s.modifiedFiles.has(this.props.id))
-            return <CircularProgress />;
-        const o = s.modifiedFiles.get(this.props.id);
+        switch (s.modifiedFiles.state) {
+        case 'initial': return <span>Internal error</span>;
+        case 'error': return <span>Error loading</span>;
+        case 'loading': return <CircularProgress />;
+        case 'data': break;
+        }
+        const o = s.modifiedFiles.data.get(this.props.id);
+        if (!o) return <span>Not found</span>;
         const current = o.current || "";
         const content = this.state.content === null?current:this.state.content;
         const patch = Diff.createPatch(o.path, o.deployed, o.actual || "", "","");
@@ -189,13 +186,14 @@ export class ModifiedFileRevolver extends React.Component<{id:number}, {content:
 
 export const ModifiedFiles = withStyles(styles)(observer(function ModifiedFiles(p: StyledComponentProps) {
     const s = state.modifiedFiles;
-    if (!s.loaded) {
-        s.load();
-        return <CircularProgress />;
+    switch (s.modifiedFiles.state) {
+    case 'initial': return <span>Internal error</span>;
+    case 'error': return <span>Error loading</span>;
+    case 'loading': return <CircularProgress />;
+    case 'data': break;
     }
-
     let rows = [];
-    for (const [id, f] of s.modifiedFiles) {
+    for (const [id, f] of s.modifiedFiles.data) {
         const oo = state.objectDigests.get(f.type);
         const a : IModifiedFilePage = {type: PAGE_TYPE.ModifiedFile, id: id};
         rows.push(<tr key={id}>

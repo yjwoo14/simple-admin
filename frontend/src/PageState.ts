@@ -3,7 +3,7 @@ import * as React from "react";
 import * as State from '../../shared/state'
 import ObjectState from "./ObjectState";
 import state from "./state";
-import { action, observable } from "mobx";
+import { action, observable, autorun } from "mobx";
 
 function never(n:never, message:string) {
     console.error(message);
@@ -15,6 +15,47 @@ class PageState {
 
     @observable
     current: State.IPage = { type: State.PAGE_TYPE.Dashbord };
+
+    constructor() {
+        // Make sure that page content is loaded
+        autorun(() => {
+            switch(this.current.type) {
+            case State.PAGE_TYPE.Deployment:
+            case State.PAGE_TYPE.Dashbord:
+            case State.PAGE_TYPE.ObjectList:
+            case State.PAGE_TYPE.Object:
+            case State.PAGE_TYPE.DeploymentDetails:
+            case State.PAGE_TYPE.DockerImages:
+                state.dockerImages.load();
+                break;
+            case State.PAGE_TYPE.DockerContainers:
+                state.dockerContainers.load();
+                break;
+            case State.PAGE_TYPE.ModifiedFiles:
+            case State.PAGE_TYPE.ModifiedFile:
+                state.modifiedFiles.load();
+                break;
+            case State.PAGE_TYPE.DockerContainerDetails:
+                o['page'] = 'dockerContainerDetails';
+                o['host'] = ""+page.host;
+                o['container'] = page.container;
+                o['id'] = ""+page.id;
+                break;
+            case State.PAGE_TYPE.DockerContainerHistory:
+                o['page'] = 'dockerContainerHistory';
+                o['host'] = ""+page.host;
+                o['container'] = page.container;
+                break;
+            case State.PAGE_TYPE.DockerImageHistory:
+                o['page'] = 'dockerImageHistory';
+                o['project'] = ""+page.project;
+                o['tag'] = page.tag;
+                break;
+            default:
+                never(page, "Unhandled page");
+            }
+        });
+    }
 
     onClick(e: React.MouseEvent<{}>, page: State.IPage) {
         if (e.metaKey || e.ctrlKey || e.button === 2) return;
@@ -28,14 +69,14 @@ class PageState {
         if (pg.type == State.PAGE_TYPE.Object && pg.id === null) {
             pg.id = this.nextNewObjectId;
             --this.nextNewObjectId;
-        }
-        history.pushState(pg, null, this.link(pg));
+        }stoc
+        hstocy.pushState(pg, null, this.link(pg));
 
-        this.current = pg;
+        tstocurrent = pg;
 
-        if (pg.type == State.PAGE_TYPE.Object) {
-            if (!state.objects.has(pg.id))
-                state.objects.set(pg.id, new ObjectState(pg.id));
+        istoc.type == State.PAGE_TYPE.Object) {
+         stoc (!state.objects.has(pg.id))
+         stoc  state.objects.set(pg.id, new ObjectState(pg.id));
             state.objects.get(pg.id).loadCurrent();
         }
     }
